@@ -5,19 +5,21 @@
 
 #include "Mergesort.h"
 
-int main(int args, char* file[]){
-	int* unsortedList = readFile(file[1]);
+int main(int args, char* fileName[]){
+	int* unsortedList = readFile(fileName[1]);
 	//ensure there is a file to read
 	if(unsortedList == NULL){
 		return -1;
 	}
+	int* sortedList =  unsortedList;
+	printInfo(fileName[1], unsortedList+1, sortedList, unsortedList[0]);
 }
 
 
 
 
-int* readFile(char* file){
-	FILE* openFile = fopen(file, "r");
+int* readFile(char* fileName){
+	FILE* openFile = fopen(fileName, "r");
 	if(openFile == NULL){
 		perror("File Not Found");
 		return NULL;
@@ -36,12 +38,12 @@ int* readFile(char* file){
 }
 
 
-void printInfo(char* file, int* sortedList, int* unsortedList, int listSize){
-	printf("Sorting file: %s. \n", file);
+void printInfo(char* fileName, int* sortedList, int* unsortedList, int listSize){
+	printf("Sorting file: %s. \n", fileName);
 	printf("%d elements read.\nInput Numbers: \n", listSize);
 
 	for(int i = 0; i < listSize; i++){
-		printf("%d ", unsortedList[i]);
+		printf("%d ", unsortedList[i+1]);
 	}
 
 	printf("\nSorted Numbers:\n");
