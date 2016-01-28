@@ -11,8 +11,8 @@ int main(int args, char* fileName[]){
 	if(unsortedList == NULL){
 		return -1;
 	}
-	int* sortedList = mergesort(unsortedList+1, unsortedList[0]);
-	printInfo(fileName[1], unsortedList+1, sortedList, unsortedList[0]);
+	int* sortedList = mergesort(unsortedList+1, 0, unsortedList[0]);
+	printInfo(fileName[1], unsortedList+1, sortedList+1, unsortedList[0]);
 	free(unsortedList);
 	free(sortedList);
 }
@@ -23,21 +23,17 @@ pid_t separateProcess(pid_t pid){
   }
 }
 
-int* mergesort(int* unsortedList, int listSize){
+int* mergesort(int* unsortedList, int start, int end){
   
-  if (listSize < 2){return unsortedList-1;}
+  if ((end - start) < 2){return unsortedList-1;}
 
-  int middle = listSize / 2;
-
-  printf("%d ", middle);
+  int middle = (end + start) / 2;
 
   int leftMem = sharedMem(middle);
-  int* leftPointer = breakdown(leftMem, unsortedList, 0, middle);
+  int* leftPointer = breakdown(leftMem, unsortedList, start, middle);
 
   int rightMem = sharedMem(middle+1);
-  int* rightPointer = breakdown(rightMem, unsortedList, middle, listSize);
-
-  printf("%d ", middle);
+  int* rightPointer = breakdown(rightMem, unsortedList, middle, end);
 
   int pid_left = fork();
   int pid_right = separateProcess(pid_left);
@@ -47,13 +43,13 @@ int* mergesort(int* unsortedList, int listSize){
   } else if (pid_right == 0){
     childSort(rightPointer);
   }else{
-    waitpid(pid_left);
-    waitpid(pid_right);
+    waitpid(pid_left, NULL, 0);
+    waitpid(pid_right, NULL, 0);
     
-    int* sortedList = merge(leftPointer, rightPointer, listSize, middle);  
+    int* sortedList = merge(leftPointer, rightPointer, start, end);  
     
     removeMem(leftPointer, leftMem);
-    removeMem(righPointer, rightMem);
+    removeMem(rightPointer, rightMem);
 
     return sortedList;
     
@@ -76,7 +72,7 @@ int sharedMem(int size){
 
 void childSort(int* sharedMem){
   int end = sharedMem[0];
-  updateMem(sharedMem, mergesort(sharedMem+1, end));
+  updateMem(sharedMem, mergesort(sharedMem+1, 0, end));
   _exit(0);
 }
 
@@ -86,23 +82,24 @@ void updateMem(int* oldMem, int* newMem){
   }
 }
 
-int* merge(int* left, int* right, int listSize, int middle) {
-  int* sortedList = malloc((listSize+1)*INT_SIZE);
+int* merge(int* left, int* right, int start, int end) {
+  int* sortedList = malloc((end + 1)*INT_SIZE);
   int leftIndex = 1;
   int rightIndex = 1;
-  sortedList[0] = listSize;
+  sortedList[0] = end;
   int rightSize = right[0];
   int leftSize = left[0];
 
-  for(int i = 0; i <= listSize; i++){
+  for(int i = 1; i <= end; i++){
     if((leftIndex <= leftSize) && ((left[leftIndex] < right[rightIndex]) || (rightIndex > rightSize))){
       sortedList[i] = left[leftIndex];
-      leftIndex = 1;
+      leftIndex ++;
     }else{
       sortedList[i] = right[rightIndex];
       rightIndex ++;
     }
   }
+  return sortedList;
 }
 
 int* breakdown(int mem, int* unsortedList, int start, int end){
@@ -135,19 +132,19 @@ int* readFile(char* fileName){
 	return contents;
 }
 
-void printInfo(char* fileName, int* sortedList, int* unsortedList, int listSize){
+void printInfo(char* fileName, int* unsortedList, int* sortedList, int listSize){
 	printf("Sorting file: %s. \n", fileName);
 	printf("%d elements read.\nInput Numbers: \n", listSize);
 
 	for(int i = 0; i < listSize; i++){
-		printf("%d ", unsortedList[i+1]);
+		printf("%d ", unsortedList[i]);
 	}
 
 	printf("\nSorted Numbers:\n");
 
-	for(int i = 0; i < listSize; i++){
-		printf("%d ", sortedList[i]);
+	for(int i = 0; i<listSize; i++){
+		printf("%d ",sortedList[i]);
 	}
-
+	
 	printf("\n");
 }
