@@ -17,12 +17,23 @@ int main(int args, char* fileName[]){
 	free(sortedList);
 }
 
+/** @brief A function to ensure that each child process doesn't call fork immediately
+*   @param pid: the pid of the first child process called
+*   @return the pid_t of the new process
+**/
 pid_t separateProcess(pid_t pid){
   if(pid > 0){
     return fork();
   }
 }
 
+/** @brief Splits the list into halves that each have their own process
+*           which recursively runs until the 'list' is only a single element
+*   @param unsortedList: a pointer to the beginning of the list
+*   @param start: the start index of the list
+*   @param end: the end of the index of the list
+*   @return a pointer that points to the start of the sortedList
+**/
 int* mergesort(int* unsortedList, int start, int end){
   
   if ((end - start) < 2){return unsortedList-1;}
@@ -56,11 +67,20 @@ int* mergesort(int* unsortedList, int start, int end){
   }
 }
 
+/** @brief Removes the shared memory
+*   @param memPointer: points to the shared memory buffer
+*   @param mem: the ID of the pointer
+*   @return void
+**/
 void removeMem(int* memPointer, int mem){
   shmdt(memPointer);
   shmctl(mem, IPC_RMID, 0);
 }
 
+/** @brief Creates a shared memory ID
+*   @param size: an in of the size needing to be allocated
+*   @return an int of the memory allocated
+**/
 int sharedMem(int size){
   int mem = shmget(IPC_PRIVATE, size, SHARED_MEM_MODE);
   if(mem == -1){
@@ -70,18 +90,34 @@ int sharedMem(int size){
   return mem;
 }
 
+/** @brief Helps mergesort split to single elements
+*   @param sharedMem: a pointer to the shared memory of the child and parent
+*   @return void
+**/
 void childSort(int* sharedMem){
   int end = sharedMem[0];
   updateMem(sharedMem, mergesort(sharedMem+1, 0, end));
   _exit(0);
 }
 
+/** @brief Updates the shared memory
+*   @param oldMem: pointer to the old memory
+*   @param newMem: pointer to the new memory
+*   @return void
+**/
 void updateMem(int* oldMem, int* newMem){
   for(int i = 0; i <= newMem[0]; i++){
     oldMem[i] = newMem[i];
   }
 }
 
+/** @brief Merges the single element lists into a sorted list
+*   @param left: pointer to the left shared memory buffer
+*   @param right: pointer to the right shared memory buffer
+*   @param start: the first index of the sorted array
+*   @param end: the last index of the sorted array
+*   @return pointer to the merged left and right memory buffers
+**/
 int* merge(int* left, int* right, int start, int end) {
   int* sortedList = malloc((end + 1)*INT_SIZE);
   int leftIndex = 1;
@@ -102,8 +138,20 @@ int* merge(int* left, int* right, int start, int end) {
   return sortedList;
 }
 
+/** @brief Creates the mshared mempointer and places it into memory
+*   @param mem: the ID of the memory buffer
+*   @param unsortedList: the list to be sorted
+*   @param start: the start index to be placed in mem
+*   @param end: the end index to be placed in mem
+*   @return a pointer to the shared memory
+**/
 int* breakdown(int mem, int* unsortedList, int start, int end){
   int* sharedMem = shmat(mem, 0, 0);
+  if((void* ) sharedMem == (void* ) -1){
+    perror("Share Memory Attach Failed");
+    return sharedMem;
+  }
+
   int buffer = 0;
 
   for(int i = start; i < end; i++){
@@ -113,6 +161,10 @@ int* breakdown(int mem, int* unsortedList, int start, int end){
   return sharedMem;
 }
 
+/** @brief Reads the file
+*   @param fileName: the name of the file to be read
+*   @return pointer to the integer array that holds our list
+**/
 int* readFile(char* fileName){
 	FILE* openFile = fopen(fileName, "r");
 	if(openFile == NULL){
@@ -132,6 +184,13 @@ int* readFile(char* fileName){
 	return contents;
 }
 
+/** @brief Prints the information required for the assignment to the screen 
+*   @param fileName: the name of the file we are reading from
+*   @param unsortedList: a pointer the the list to be sorted
+*   @param sortedList: a pointer the the new sortedList
+*   @param listSize: the size of the list we are sorting
+*   @return void
+**/
 void printInfo(char* fileName, int* unsortedList, int* sortedList, int listSize){
 	printf("Sorting file: %s. \n", fileName);
 	printf("%d elements read.\nInput Numbers: \n", listSize);
